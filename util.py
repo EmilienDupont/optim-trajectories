@@ -45,8 +45,7 @@ def plot_2dscatter(x_list, y_list, color_list, filename='temp'):
         data.append(trace)
 
     fig = go.Figure(data=data)
-    py.plot(fig, auto_open=False,
-            filename=get_timestamp_filename(filename))
+    py.plot(fig, filename=get_timestamp_filename(filename))
 
 def get_timestamp_filename(filename):
     """
@@ -65,16 +64,30 @@ class LossHistory(Callback):
     def on_batch_end(self, batch, logs={}):
         self.losses.append(logs.get('loss'))
 
+    def get_data(self):
+        return self.losses
+
+    def get_name(self):
+        return "loss"
+
 class WeightHistory(Callback):
     """
-    Callback to record weights in last layer after every batch.
-    This could be changed?
+    Callback to record weights in a particular layer after every batch.
     """
+    def __init__(self, layer=-1):
+        self.layer = layer
+
     def on_train_begin(self, logs={}):
         self.w_history = []
         self.b_history = []
 
     def on_batch_end(self, batch, logs={}):
-        w, b = self.model.layers[-1].get_weights()
+        w, b = self.model.layers[self.layer].get_weights()
         self.w_history.append(w.reshape(-1))
         self.b_history.append(b)
+
+    def get_data(self):
+        return self.w_history
+
+    def get_name(self):
+        return "weight_{}".format(self.layer)
