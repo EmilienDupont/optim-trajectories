@@ -1,8 +1,22 @@
 import util
 
+
 class Recorder():
     def __init__(self, model, callbacks=[]):
-        self.callbacks = [util.LossHistory(), util.WeightHistory(-1)] + callbacks
+        """
+        Parameters
+        ----------
+        model : DeepModel instance
+
+        callbacks : list
+            List of callbacks (things you would like to record). Loss and
+            weights of last layer will be part of callbacks by default.
+        """
+        # Default to recording loss and weights in all layers
+        weight_callbacks = [util.WeightHistory(layer.name)
+                            for layer in model.model.layers
+                            if layer.name.startswith('weight')]
+        self.callbacks = [util.LossHistory()] + weight_callbacks + callbacks
         self.callback_names = []
         for callback in self.callbacks:
             self.callback_names.append(callback.get_name())
@@ -40,7 +54,8 @@ class Recorder():
             for j in range(repeat):
                 print("Rep {}/{}".format(j+1, repeat))
 
-                self.model.reset_model(opt=opt, reuse_weights=(not random_init))
+                self.model.reset_model(opt=opt,
+                                       reuse_weights=(not random_init))
 
                 self.model.fit(x_train, y_train,
                                batch_size=batch_size,
@@ -54,3 +69,6 @@ class Recorder():
                 self.history[self.num_runs] = one_run_history
 
                 self.num_runs += 1
+
+    def evaluate(self, x_test, y_test):
+        return self.model.evaluate(x_test, y_test)
